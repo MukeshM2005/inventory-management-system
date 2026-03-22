@@ -1,10 +1,14 @@
 -- =========================================
 -- INVENTORY MANAGEMENT SYSTEM DATABASE
 -- =========================================
+-- Author: Your Name
+-- Description: Complete database schema + queries
 
--- Create Database
+-- =========================================
+-- CREATE DATABASE
+-- =========================================
+
 CREATE DATABASE IF NOT EXISTS inventory_management_system;
-
 USE inventory_management_system;
 
 -- =========================================
@@ -77,32 +81,107 @@ CREATE TABLE transactions (
 );
 
 -- =========================================
--- SAMPLE QUERIES (FOR DEMO)
+-- USER QUERIES
+-- =========================================
+
+-- View all users
+SELECT * FROM users;
+
+-- View users with selected fields
+SELECT id, username, email, role, created_at FROM users;
+
+-- View Admin users
+SELECT id, username, email FROM users WHERE role = 'admin';
+
+-- View Staff users
+SELECT id, username, email FROM users WHERE role = 'staff';
+
+-- =========================================
+-- PRODUCT & INVENTORY QUERIES
 -- =========================================
 
 -- View all products with category
-SELECT p.name, p.sku, c.name AS category, p.quantity, p.price
+SELECT 
+    p.name, 
+    p.sku, 
+    c.name AS category, 
+    p.quantity, 
+    p.price
 FROM products p
 JOIN categories c ON p.category_id = c.id;
 
 -- Low stock products
-SELECT name, quantity, reorder_level
+SELECT 
+    name, 
+    quantity, 
+    reorder_level
 FROM products
 WHERE quantity <= reorder_level;
 
 -- Total inventory value
-SELECT SUM(quantity * price) AS total_value
+SELECT 
+    SUM(quantity * price) AS total_value
 FROM products;
 
+-- =========================================
+-- TRANSACTION QUERIES
+-- =========================================
+
 -- Transactions history
-SELECT t.id, p.name, t.type, t.quantity, t.created_at
+SELECT 
+    t.id, 
+    p.name, 
+    t.type, 
+    t.quantity, 
+    t.created_at
 FROM transactions t
 JOIN products p ON t.product_id = p.id
 ORDER BY t.created_at DESC;
 
+-- Transactions with user details
+SELECT 
+    t.id,
+    p.name AS product_name,
+    t.type,
+    t.quantity,
+    u.username,
+    u.role,
+    t.created_at
+FROM transactions t
+JOIN products p ON t.product_id = p.id
+JOIN users u ON t.user_id = u.id
+ORDER BY t.created_at DESC;
+
+-- =========================================
+-- ANALYTICS QUERIES
+-- =========================================
+
 -- Stock movement by category
-SELECT c.name AS category, t.type, SUM(t.quantity) AS total
+SELECT 
+    c.name AS category, 
+    t.type, 
+    SUM(t.quantity) AS total
 FROM transactions t
 JOIN products p ON t.product_id = p.id
 JOIN categories c ON p.category_id = c.id
 GROUP BY c.name, t.type;
+
+-- Stock movement by category + user role
+SELECT 
+    c.name AS category,
+    u.role,
+    t.type,
+    SUM(t.quantity) AS total
+FROM transactions t
+JOIN products p ON t.product_id = p.id
+JOIN categories c ON p.category_id = c.id
+JOIN users u ON t.user_id = u.id
+GROUP BY c.name, u.role, t.type;
+
+-- Admin vs Staff activity
+SELECT 
+    u.role,
+    COUNT(t.id) AS total_transactions
+FROM transactions t
+JOIN users u ON t.user_id = u.id
+GROUP BY u.role;
